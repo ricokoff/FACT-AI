@@ -72,9 +72,9 @@ def compute_jacobian_sum(x, fx):
 
 def compute_jacobian(x, fx):
     # Ideas from https://discuss.pytorch.org/t/clarification-using-backward-on-non-scalars/1059/2
-    
-    
-    
+
+
+
     b = x.size(0)
     n = x.size(-1)
     # if fx.dim() > 1:
@@ -141,7 +141,7 @@ class ClassificationTrainer():
         if args.h_type != 'input':
             # Means conceptizer will be trained, need reconstruction loss for it
             self.learning_h = True
-            self.h_reconst_criterion = F.mse_loss  #nn.MSELoss() 
+            self.h_reconst_criterion = F.mse_loss  #nn.MSELoss()
             # if args.h_sparsity != -1:
             #     print('Will enforce sparsity on h')
             self.h_sparsity = args.h_sparsity
@@ -196,7 +196,7 @@ class ClassificationTrainer():
                     'state_dict': self.model.state_dict(),
                     'best_prec1': best_prec1,
                     'optimizer' : self.optimizer.state_dict(),
-                    'model': self.model  
+                    'model': self.model
                  }, is_best, save_path)
 
         print('Training done')
@@ -209,10 +209,10 @@ class ClassificationTrainer():
         recons_loss    = self.h_reconst_criterion(self.model.recons,
                                 Variable(inputs.data, requires_grad = False))
 
-        all_losses['reconstruction'] = recons_loss.data[0]
+        all_losses['reconstruction'] = recons_loss.item()
         if self.h_sparsity != -1:
             sparsity_loss   = self.model.h_norm_l1.mul(self.h_sparsity)
-            all_losses['h_sparsity'] = sparsity_loss.data[0]
+            all_losses['h_sparsity'] = sparsity_loss.item()
             recons_loss += sparsity_loss
         return recons_loss
 
@@ -247,7 +247,7 @@ class ClassificationTrainer():
 
             outputs, loss, loss_dict = self.train_batch(inputs, targets)
             loss_dict['iter'] = i + (len(train_loader)*epoch)
-            
+
             # the dict here
             self.loss_history.append(loss_dict)
 
@@ -265,7 +265,7 @@ class ClassificationTrainer():
             #     prec5 = [100]
             # else:
             #     prec1, prec5 = self.accuracy(outputs.data, targets.data, topk=(1,5))
-            losses.update(loss.data[0], inputs.size(0))
+            losses.update(loss.item(), inputs.size(0))
             top1.update(prec1[0], inputs.size(0))
             top5.update(prec5[0], inputs.size(0))
 
@@ -298,8 +298,9 @@ class ClassificationTrainer():
             # get the inputs
             if self.cuda:
                 inputs, targets = inputs.cuda(), targets.cuda()
-            input_var = torch.autograd.Variable(inputs, volatile=True)
-            target_var = torch.autograd.Variable(targets, volatile=True)
+            with torch.no_grad():
+                input_var = torch.autograd.Variable(inputs)
+                target_var = torch.autograd.Variable(targets)
 
             # compute output
             output = self.model(input_var)
@@ -313,7 +314,7 @@ class ClassificationTrainer():
             else:
                 prec1, prec5 = self.binary_accuracy(output.data, targets), [100]
 
-            losses.update(loss.data[0], inputs.size(0))
+            losses.update(loss.item(), inputs.size(0))
             top1.update(prec1[0], inputs.size(0))
             top5.update(prec5[0], inputs.size(0))
 
@@ -350,8 +351,8 @@ class ClassificationTrainer():
                 self.model.parametrizer.hidden = self.model.parametrizer.init_hidden()# detaching it from its history on the last instance.
 
             output = self.model(data)
-            #test_loss += self.prediction_criterion(output, targets.view(targets.size(0))).data[0]
-            test_loss += self.prediction_criterion(output, targets).data[0]
+            #test_loss += self.prediction_criterion(output, targets.view(targets.size(0))).item()
+            test_loss += self.prediction_criterion(output, targets).item()
 
             #print(output)
             if self.nclasses == 2:
@@ -454,7 +455,7 @@ class VanillaClassTrainer(ClassificationTrainer):
             pred_loss       = self.prediction_criterion(pred, targets)
         except:
             pdb.set_trace()
-        all_losses = {'prediction': pred_loss.data[0]}
+        all_losses = {'prediction': pred_loss.item()}
         if self.learning_h:
             h_loss = self.concept_learning_loss(inputs, all_losses)
             loss = pred_loss + h_loss
@@ -505,11 +506,11 @@ class CLPenaltyTrainer(ClassificationTrainer):
         grad_penalty = self.calc_crosslip_penalty(self.model.parametrizer, inputs)#, pred)
         grad_penalty.backward() # this will be added to the grads w.r.t. the loss
 
-        #print(pred_loss.data[0], grad_penalty.data[0])
+        #print(pred_loss.item(), grad_penalty.item())
 
         loss = pred_loss + self.lambd*grad_penalty
 
-        self.loss_history.append([pred_loss.data[0], grad_penalty.data[0]])
+        self.loss_history.append([pred_loss.item(), grad_penalty.item()])
         self.optimizer.step()
 
         return pred, loss
@@ -574,7 +575,7 @@ class GradPenaltyTrainer(ClassificationTrainer):
 
         # Calculate loss
         pred_loss       = self.prediction_criterion(pred, targets)
-        all_losses = {'prediction': pred_loss.data[0]}
+        all_losses = {'prediction': pred_loss.item()}
         if self.learning_h:
             h_loss = self.concept_learning_loss(inputs, all_losses)
             loss = pred_loss + h_loss
@@ -586,7 +587,7 @@ class GradPenaltyTrainer(ClassificationTrainer):
         #update1 = model.weight.grad.data.clone()
 
         if self.penalty_type == 1:
-            
+
             #raise NotImplementedError('Fix this')
             #  || df/dx - theta ||)^2
             #dTh = self.compute_parametrizer_jacobian(inputs)
@@ -621,15 +622,15 @@ class GradPenaltyTrainer(ClassificationTrainer):
             # Then?? Need to do for, bmm does not do 4D. Maybe trhough sum approach?
             grad_penalty = (prod - dF).norm(self.norm) #.pow(2)
 
-        all_losses['grad_penalty'] = grad_penalty.data[0]
+        all_losses['grad_penalty'] = grad_penalty.item()
 
         #grad_penalty.backward() # this will be added to the grads w.r.t. the loss
 
-        #print(grad_penalty.data[0])
+        #print(grad_penalty.item())
         loss = pred_loss + self.lambd*grad_penalty
         loss.backward()
 
-        #self.loss_history.append([pred_loss.data[0], grad_penalty.data[0]])
+        #self.loss_history.append([pred_loss.item(), grad_penalty.item()])
         self.optimizer.step()
 
         return pred, loss, all_losses
@@ -669,7 +670,7 @@ class GradPenaltyTrainer(ClassificationTrainer):
     #         ( || df/dx - theta ||)^2
     #
     #     """
-    #     
+    #
     #     g = torch.autograd.grad(outputs=y.mean(),inputs=x, create_graph=True)[0]
     #     print(g.size())
     #     print(net.thetas.size())
@@ -695,7 +696,7 @@ class GradPenaltyTrainer(ClassificationTrainer):
     #
     #              || dtheta/dx  || / || dh / dx ||
     #     """
-    #     
+    #
     #     # the variables not the data
     #     thetas = model.thetas #model.parametrizer(x)
     #     # if True:
@@ -725,7 +726,7 @@ class GradPenaltyTrainer(ClassificationTrainer):
     #              || dh/dx*theta - df/dx  || =  || dth/dx*h  ||
     #
     #     """
-    #     
+    #
     #     # the variables not the data
     #     thetas = model.thetas #model.parametrizer(x)
     #     # if True:
@@ -766,7 +767,7 @@ class HLearningClassTrainer(ClassificationTrainer):
     def __init__(self, model, args):
         super().__init__(model, args)
         self.sparsity = args.h_sparsity
-        self.reconst_criterion = nn.MSELoss() 
+        self.reconst_criterion = nn.MSELoss()
 
     def train_batch(self, inputs, targets):
         """ inputs, targets already variables """
@@ -785,7 +786,7 @@ class HLearningClassTrainer(ClassificationTrainer):
             loss += sparsity_loss
 
         # Keep track of losses
-        self.loss_history.append([pred_loss.data[0], reconst_loss.data[0]])
+        self.loss_history.append([pred_loss.item(), reconst_loss.item()])
 
         # Backpropagation
         self.optimizer.zero_grad()
@@ -828,13 +829,13 @@ class GradPenaltyTrainer_old(ClassificationTrainer):
 
         loss = pred_loss + self.lambd*grad_penalty
 
-        self.loss_history.append([pred_loss.data[0], grad_penalty.data[0]])
+        self.loss_history.append([pred_loss.item(), grad_penalty.item()])
         self.optimizer.step()
 
         return pred, loss
 
     def calc_gradient_penalty(self, net,x,y):
-        
+
         g = torch.autograd.grad(outputs=y.mean(),inputs=x, create_graph=True)[0]
         print(g.size())
         print(net.thetas.size())
@@ -889,17 +890,17 @@ class GradPenaltyTrainer3(ClassificationTrainer):
         grad_penalty = self.calc_gradient_penalty(self.model, inputs, pred, norm = 1)
         #grad_penalty.backward() # this will be added to the grads w.r.t. the loss
 
-        print(grad_penalty.data[0])
+        print(grad_penalty.item())
         loss = pred_loss + self.lambd*grad_penalty
         loss.backward()
 
-        self.loss_history.append([pred_loss.data[0], grad_penalty.data[0]])
+        self.loss_history.append([pred_loss.item(), grad_penalty.item()])
         self.optimizer.step()
 
         return pred, loss
 
     def calc_gradient_penalty(self,model,x,y, norm = 1):
-        
+
         # the variables not the data
         thetas = model.thetas #model.parametrizer(x)
         # if True:
@@ -969,7 +970,7 @@ class NormalTrainer_old():
 
                 # Loss
                 loss = self.prediction_criterion(pred, targets)
-                losses.append(loss.data[0])
+                losses.append(loss.item())
 
                 # Backpropagation
                 loss.backward()
@@ -983,7 +984,7 @@ class NormalTrainer_old():
                         batch_idx * len(inputs),
                         len(train_loader.dataset),
                         100. * batch_idx / len(train_loader),
-                        loss.data[0]),
+                        loss.item()),
                         end='')
             print()
 
@@ -1010,7 +1011,7 @@ class NormalTrainer_old():
                 data, target = data.cuda(), target.cuda()
             data, target = Variable(data, volatile=True), Variable(target)
             output = self.M(data)
-            test_loss += self.prediction_criterion(output, target.view(target.size(0))).data[0]
+            test_loss += self.prediction_criterion(output, target.view(target.size(0))).item()
             #print(output)
             pred = output.data.max(1)[1] # get the index of the max log-probability
             #print(pred, target)
@@ -1056,8 +1057,8 @@ class HLearningTrainer():
         loss = pred_loss + reconst_loss
 
         # Keep track of losses
-        pred_losses.append(pred_loss.data[0])
-        reconst_losses.append(reconst_loss.data[0])
+        pred_losses.append(pred_loss.item())
+        reconst_losses.append(reconst_loss.item())
 
         # Backpropagation
         loss.backward()
@@ -1092,8 +1093,8 @@ class HLearningTrainer():
                         batch_idx * len(inputs),
                         len(train_loader.dataset),
                         100. * batch_idx / len(train_loader),
-                        pred_loss.data[0],
-                        reconst_loss.data[0]),
+                        pred_loss.item(),
+                        reconst_loss.item()),
                         end='')
             print()
 
@@ -1119,7 +1120,7 @@ class HLearningTrainer():
                 data, target = data.cuda(), target.cuda()
             data, target = Variable(data, volatile=True), Variable(target)
             output = self.M(data)
-            test_loss += self.prediction_criterion(output, target.view(target.size(0))).data[0]
+            test_loss += self.prediction_criterion(output, target.view(target.size(0))).item()
             #print(output)
             pred = output.data.max(1)[1] # get the index of the max log-probability
             #print(pred, target)

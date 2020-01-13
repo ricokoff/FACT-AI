@@ -32,6 +32,7 @@ from torchvision.datasets import MNIST
 from torch.utils.data.sampler import SubsetRandomSampler
 import torch.utils.data.dataloader as dataloader
 
+
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
@@ -86,8 +87,7 @@ def find_conflicting(df, labels, consensus_delta = 0.2):
     return pd.DataFrame(pruned_df), np.array(pruned_lab)
 
 def load_compas_data(valid_size=0.1, shuffle=True, random_seed=2008, batch_size=64):
-    df=pd.read_csv(os.path.abspath('./data/COMPAS/') + '/propublica_data_for_fairml.csv')
-#    df= pd.read_csv(dirname("../data/COMPAS/") + "propublica_data_for_fairml.csv")
+    df= pd.read_csv("/home/evermeij/Documents/Github/FACT/SENN/data/compass/propublicaCompassRecividism_data_fairml/propublica_data_for_fairml.csv")
     # Binarize num of priors var? Or normalize it 0,1?
     df['Number_of_Priors'] = np.sqrt(df['Number_of_Priors'])/(np.sqrt(38))
     compas_rating = df.score_factor.values # This is the target??
@@ -121,7 +121,6 @@ def main():
     args.theta_dim = args.nclasses
     args.print_freq = 100
     args.epochs = 10
-    args.theta_arch = 'simple'
     train_loader, valid_loader, test_loader, train, valid, test, data, feat_names  = load_compas_data()
 
     layer_sizes = (10,10,5)
@@ -136,7 +135,7 @@ def main():
     else:
         raise ValueError('Unrecognized h_type')
 
-    model_path, log_path, results_path = generate_dir_names('compas', args)
+    model_path, log_path, results_path = generate_dir_names('compas', args=args)
 
 
     parametrizer = dfc_parametrizer(input_dim, *layer_sizes, args.nconcepts, args.theta_dim)
@@ -181,6 +180,8 @@ def main():
 
 
     #noise_stability_plots(model, test_tds, cuda = args.cuda, save_path = results_path)
+    if args.cuda:
+        model.cpu()
 
     lips, argmaxes = sample_local_lipschitz(model, test, mode = 2, top_k = 10, max_distance = 3)
 
@@ -188,15 +189,18 @@ def main():
     imax = np.unravel_index(np.argmax(lips), lips.shape)[0]
     jmax = argmaxes[imax][0][0]
     print('Max Lip value: {}, attained for pair ({},{})'.format(max_lip, imax, jmax))
+    # print(test.tensors[0])
+    # print(test.tensors[1])
+    x      = test.tensors[0][imax]
+    argmax = test.tensors[0][jmax]
 
-    x      = test.data_tensor[imax]
-    argmax = test.data_tensor[jmax]
+    with torch.no_grad():
+        pred_x = model(Variable(x.view(1,-1))).data
+        att_x = model.thetas.data.squeeze().numpy().squeeze()
+        
+        pred_argmax = model(Variable(argmax.view(1,-1))).data
+        att_argmax = model.thetas.data.squeeze().numpy().squeeze()
 
-    pred_x = model(Variable(x.view(1,-1), volatile = True)).data
-    att_x = model.thetas.data.squeeze().numpy().squeeze()
-
-    pred_argmax = model(Variable(argmax.view(1,-1), volatile = True)).data
-    att_argmax = model.thetas.data.squeeze().numpy().squeeze()
 
     pdb.set_trace()
     results['x_max']      = x

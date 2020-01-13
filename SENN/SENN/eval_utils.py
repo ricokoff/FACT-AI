@@ -172,7 +172,7 @@ def estimate_dataset_lipschitz(model, dataloader, continuous=True, mode = 1, eps
     model.eval()
     Lips = []
     # ToDoL Add a parfor here
-    
+
 
     for i, (inputs, targets) in enumerate(dataloader, 0):
         if cuda:
@@ -251,8 +251,9 @@ def sample_local_lipschitz(model, dataset, mode = 2, max_distance = None, top_k 
         # get the inputs
         if cuda:
             inputs, targets = inputs.cuda(), targets.cuda()
-        input_var = torch.autograd.Variable(inputs, volatile=True)
-        target_var = torch.autograd.Variable(targets, volatile=True)
+        with torch.no_grad():
+            input_var = torch.autograd.Variable(inputs)
+            target_var = torch.autograd.Variable(targets)
 
         _ = model(input_var)
         Ts.append(model.thetas.squeeze())

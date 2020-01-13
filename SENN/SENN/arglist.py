@@ -127,6 +127,7 @@ def parse_args():
     parser.add_argument('--h_sparsity', type=float, default=1e-4, help='sparsity parameter for learning h [default: -1, no sparisty enforcing]')
 
     parser.add_argument('--positive_theta', action='store_true', default=False, help="relevance scores in [0,1] instead of [-1,1]")
+    parser.add_argument('--theta_arch', type=str, default='simple', help="Parametrizer architecture", choices= ['simple','alexnet', 'vgg8','vgg11_bn', 'vgg11', 'vgg16'])
     parser.add_argument('--theta_dim', type=int, default=-1, help="dimension of theta_i. deafults to number of classes")
     parser.add_argument('--theta_reg_type', type=str, default='unreg', help="Type of regularization on theta. [none|grad1-3|crosslip]")
     parser.add_argument('--theta_reg_lambda', type=float, default=1e-2, help="Stength of regularization on theta.")

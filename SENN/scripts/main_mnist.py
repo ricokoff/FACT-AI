@@ -134,8 +134,8 @@ def main():
         conceptizer  = input_conceptizer()
         args.nconcepts = 28*28 + int(not args.nobias)
     elif args.h_type == 'cnn':
-        
-        
+
+
         #args.nconcepts +=     int(not args.nobias)
         conceptizer  = image_cnn_conceptizer(28*28, args.nconcepts, args.concept_dim) #, sparsity = sparsity_l)
     else:
@@ -186,6 +186,10 @@ def main():
     features = None
     classes = [str(i) for i in range(10)]
     model.eval()
+
+    if args.cuda:
+        model.cpu()
+
     expl = gsenn_wrapper(model,
                         mode      = 'classification',
                         input_type = 'image',
@@ -278,7 +282,7 @@ def main():
         pdb.set_trace()
         Stability_dict = {'lips': lips}
         pickle.dump(Stability_dict, open(results_path + '_stability_blackbox.pkl', "wb"))
-        All_Results['stability_blackbox'] = lips 
+        All_Results['stability_blackbox'] = lips
 
 
     # add concept plot
@@ -286,7 +290,7 @@ def main():
 
     pickle.dump(All_Results, open(results_path + '_combined_metrics.pkl'.format(dataname), "wb"))
 
-    
+
     # args.epoch_stats = epoch_stats
     # save_path = args.results_path
     # print("Save train/dev results to", save_path)
