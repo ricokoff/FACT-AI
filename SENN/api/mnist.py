@@ -303,11 +303,15 @@ def find_prototypes(model, dataset, prototypes, Nsamples=1, print_freq=5000):
 
 
 def show_losses(losses, p1, p2, method):
-    plt.title(f'Generation losses for p1={p1}, p2={p2}, method="{method}"')
+    if p1 != 0:
+        plt.title('Generation losses for {}={}, {}={}, method="{}"'.format(r"$\alpha$",p1,r"$\beta$",p2,method))
+    else:
+        plt.title('Generation losses for {}={}, {}={}'.format(r"$\alpha$",p1,r"$\beta$",p2))
     for extreme in losses[0].keys():
         linestyle = "-" if extreme == "high" else "--"
         for cpt in losses.keys():
             #             for sample in losses[cpt][extreme].keys(): #plot one for better view
+            # be aware that these are just the first samples tried, not the ones of the best samples
             plt.plot(losses[cpt][extreme][0][0], linestyle, label=f"C{cpt + 1} {extreme}")
     plt.legend(ncol=2, bbox_to_anchor=(1, 1))
     plt.show()
@@ -322,8 +326,8 @@ def KL(q):
 def criterion(activations, cpt, generated, sign, p1=1, p2=1, method="zero"):
     ai = activations[cpt]
     if method == "zero":  # force all other activations to zero
-        sum_aj = torch.sum(torch.abs(activations)) - torch.abs(ai)
-        return sign * ai + p1 * sum_aj + p2 * KL(generated)
+        sum_aj = torch.sum(activations**2) - ai**2
+        return sign * ai + p1 * 0.5 * sum_aj + p2 * KL(generated)
     elif method == "diff":  # force largest difference with other activations
         sum_aj = torch.sum(activations) - ai
         return sign * ai - p1 * sign * sum_aj + p2 * KL(generated)
@@ -342,6 +346,7 @@ def generate_prototypes(model, prototypes, Nsteps=100, Nsamples=1, lr=0.1, p1=1,
             print(f"{cpt}/{len(prototypes.keys())}")
         for extreme in prototypes[cpt].keys():
             sign = -1. if extreme == "high" else 1.
+            prev = None
             for sample in range(Nsamples):
                 sample_loss = []
                 generator.initialize(x0=x0)  # reset generator
@@ -354,9 +359,20 @@ def generate_prototypes(model, prototypes, Nsteps=100, Nsamples=1, lr=0.1, p1=1,
                     optimizer.step()
                     sample_loss.append(loss)
                 generated = torch.tensor(generator.generated.detach())
-                info = f'M="{method}"\np1={p1}\np2={p2}' if p1 != 0 else f'p1={p1}\np2={p2}'
-                prototypes[cpt][extreme][generated] = [activations[cpt], info]
-                losses[cpt][extreme][sample] = [sample_loss, "loss"]
+                if p1 != 0:
+                    info = 'M="{}"\n{}={}\n{}={}'.format(method,r"$\alpha$",p1,r"$\beta$",p2) 
+                else:
+                    info = '{}={}\n{}={}'.format(r"$\alpha$",p1,r"$\beta$",p2) 
+                if prev is None:
+                    prev = torch.tensor(generated)
+                    prototypes[cpt][extreme][prev] = [activations[cpt], info]
+                    losses[cpt][extreme][sample] = [sample_loss, "loss"]
+                elif (activations[cpt] > prototypes[cpt][extreme][prev][0] and extreme=="high") or \
+                     (activations[cpt] < prototypes[cpt][extreme][prev][0] and extreme=="low"):
+                    prototypes[cpt][extreme].pop(prev)
+                    prev = torch.tensor(generated)
+                    prototypes[cpt][extreme][prev] = [activations[cpt], info]
+                    losses[cpt][extreme][sample] = [sample_loss, "loss"] 
     print(f"{len(prototypes.keys())}/{len(prototypes.keys())}") if print_freq != 0 else ""
     if show_loss:
         show_losses(losses, p1, p2, method)
@@ -377,7 +393,8 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
                    show_loss=False,
                    print_freqs=[5000, 2],
                    show_activations=False,
-                   return_prototypes=False):
+                   return_prototypes=False,
+                   best_of=1):
     # visualize concepts with images that max- or minimize their activations
     # (i): find the best samples from dataset, i.e. the prototypes
     # (ii): generate samples using gradient descent
@@ -385,6 +402,7 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
     # p1, p2 and method are corresponding lists specifying param settings for (ii)
     # x0 is the initial guess for the generator: random if not given
     # print_freqs specifies print frequencies for (i) and (ii) respectively
+    # best_of specifies how many times the generator will try to get a good image 
     # TO DO: input checks
 
     # example of use:
@@ -396,11 +414,12 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
     #                              print_freqs=[1000,2],
     #                              show_loss=False,
     #                              show_activations=True,
-    #                              return_prototypes=True)
+    #                              return_prototypes=True,
+    #                              best_of=5)
 
-    prototypes = empty_prototypes(model, dummies=True)
-    prototypes = find_prototypes(model, dataset, prototypes,
-                                 print_freq=print_freqs[0])
+    prototypes = empty_prototypes(model, dummies=False)
+#     prototypes = find_prototypes(model, dataset, prototypes,
+#                                  print_freq=print_freqs[0])
 
     p1 = [p1] if not isinstance(p1, list) else p1
     p2 = [p2] if not isinstance(p2, list) else p2
@@ -413,7 +432,8 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
                                          method=method[setting],
                                          x0=x0,
                                          show_loss=show_loss,
-                                         print_freq=print_freqs[1])
+                                         print_freq=print_freqs[1],
+                                         Nsamples=best_of)
 
     print("Setting up visualizations...")
     i = 1
