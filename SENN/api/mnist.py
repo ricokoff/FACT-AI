@@ -6,7 +6,7 @@ from api.generator import Generator
 
 import torch.utils.data.dataloader as dataloader
 
-from api.utils import MNIST_TEST_SET, IMAGES_FOLDER
+from api.utils import MNIST_TEST_SET, MNIST_TRAIN_SET, IMAGES_FOLDER
 
 
 def get_digit_image(digit):
@@ -417,9 +417,9 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
     #                              return_prototypes=True,
     #                              best_of=5)
 
-    prototypes = empty_prototypes(model, dummies=False)
-#     prototypes = find_prototypes(model, dataset, prototypes,
-#                                  print_freq=print_freqs[0])
+    prototypes = empty_prototypes(model, dummies=True)
+    prototypes = find_prototypes(model, dataset, prototypes,
+                                 print_freq=print_freqs[0])
 
     p1 = [p1] if not isinstance(p1, list) else p1
     p2 = [p2] if not isinstance(p2, list) else p2
@@ -470,3 +470,20 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
 
     plt.tight_layout()
     plt.show()
+
+    
+def evaluate(model, dataset, print_freq=1000):
+    #TO DO: use single batch
+    model.eval
+    correct = 0.
+    with torch.no_grad():
+        for i in range(len(dataset)):
+            if print_freq != 0 and i % print_freq == 0:
+                print(f"{i}/{len(dataset)}")
+            x, t = get_digit(dataset, i)
+            y = model(x.view(1,1,28,28))
+            if torch.argmax(y) == t:
+                correct += 1
+    if print_freq != 0:
+        print(f"{len(dataset)}/{len(dataset)}")
+    return correct/len(dataset)

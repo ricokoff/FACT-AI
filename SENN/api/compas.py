@@ -54,7 +54,7 @@ def find_conflicting(df, labels, consensus_delta=0.2):
     return pd.DataFrame(pruned_df), np.array(pruned_lab)
 
 
-def load_compas_data(shuffle=True, batch_size=64):
+def load_compas_data(shuffle=False, batch_size=64):
     filename = DATA_FOLDER.joinpath('fairml', 'doc', 'example_notebooks', 'propublica_data_for_fairml.csv')
     print(filename)
     if not os.path.isfile(str(filename)):
@@ -115,21 +115,35 @@ def plot_lipschitz_feature(model, x):
     lipschitz_feature_argmax_plot(example, argmax, att_x, att_argmax,
                                   feat_names=feat_names,
                                   digits=2, figsize=(8, 8), widths=(2, 3))
-x = {
-    'Two_yr_Recidivism': 1.,
-     'Number_of_Priors': 1.,
-     'Age_Above_FourtyFive': 1.,
-     'Age_Below_TwentyFive':1.,
-     'African_American': 1.,
-     'Asian': 1.,
-     'Hispanic': 1.,
-     'Native_American': 1.,
-     'Other':1.,
-     'Female': 0.,
-     'Misdemeanor': 1.
-    }
+# x = {
+#     'Two_yr_Recidivism': 1.,
+#      'Number_of_Priors': 1.,
+#      'Age_Above_FourtyFive': 1.,
+#      'Age_Below_TwentyFive':1.,
+#      'African_American': 1.,
+#      'Asian': 1.,
+#      'Hispanic': 1.,
+#      'Native_American': 1.,
+#      'Other':1.,
+#      'Female': 0.,
+#      'Misdemeanor': 1.
+#     }
 
 
-model = load_compas(RegLambda.E4)
+# model = load_compas(RegLambda.E4)
 
-plot_lipschitz_feature(model, x)
+# plot_lipschitz_feature(model, x)
+
+def evaluate(model, dataset, print_freq=1000):
+    model.eval
+    correct = 0.
+    with torch.no_grad():
+        for i, (x, t) in enumerate(dataset):
+            if print_freq != 0 and i % print_freq == 0:
+                print(f"{i}/{len(dataset)}")
+            y = model(x.view(1,-1)).squeeze()
+            if torch.round(y) == t:
+                correct += 1
+    if print_freq != 0:
+        print(f"{len(dataset)}/{len(dataset)}")
+    return correct/len(dataset)
