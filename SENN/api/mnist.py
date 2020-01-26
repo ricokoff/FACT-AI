@@ -394,7 +394,8 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
                    print_freqs=[5000, 2],
                    show_activations=False,
                    return_prototypes=False,
-                   best_of=1):
+                   best_of=1,
+                   compact=False):
     # visualize concepts with images that max- or minimize their activations
     # (i): find the best samples from dataset, i.e. the prototypes
     # (ii): generate samples using gradient descent
@@ -402,20 +403,21 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
     # p1, p2 and method are corresponding lists specifying param settings for (ii)
     # x0 is the initial guess for the generator: random if not given
     # print_freqs specifies print frequencies for (i) and (ii) respectively
-    # best_of specifies how many times the generator will try to get a good image 
+    # best_of specifies how many times the generator will try to get a good activation
     # TO DO: input checks
 
     # example of use:
     # prototypes = utils.visualize_cpts(model, test,
-    #                              p1=[0,0,0.1,0.1],
-    #                              p2=[0,10,10,10],
-    #                              method=["zero"]*3 + ["diff"],
+    #                              p1=[0,0,1,1],
+    #                              p2=[0,10,0,10],
+    #                              method=["zero"]*4,
     #                              x0=None,
     #                              print_freqs=[1000,2],
     #                              show_loss=False,
     #                              show_activations=True,
     #                              return_prototypes=True,
-    #                              best_of=5)
+    #                              best_of=2,
+    #                              conpact=True)
 
     prototypes = empty_prototypes(model, dummies=True)
     prototypes = find_prototypes(model, dataset, prototypes,
@@ -437,25 +439,31 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
 
     print("Setting up visualizations...")
     i = 1
-    plt.figure(figsize=(4 + len(p1) * 2, 1 + len(prototypes)))
+    if compact:
+        plt.figure(figsize=(2 + len(p1), 1 + 2 * len(prototypes)))
+    else:
+        plt.figure(figsize=(4 + len(p1) * 2, 1 + len(prototypes)))
     for cpt in prototypes.keys():
         for m, extreme in enumerate(prototypes[cpt].keys()):
             for n, sample in enumerate(prototypes[cpt][extreme].keys()):
-                sp = plt.subplot(len(prototypes), len(prototypes[0]["high"]) * 2 + 1, i)
+                if compact:
+                    sp = plt.subplot(len(prototypes)*2, len(prototypes[0]["high"]), i)
+                else:
+                    sp = plt.subplot(len(prototypes), len(prototypes[0]["high"]) * 2 + 1, i)
                 plt.axis("off")
                 plt.imshow(sample)
                 if show_activations:
                     a = prototypes[cpt][extreme][sample][0]
                     plt.text(2, 33, "a={:.3}".format(a), fontsize=9)
                 plt.text(-20, 15, f"Cpt{cpt + 1}\n{extreme}", fontsize=10) if n == 0 else None
-                if cpt == 0:
+                if cpt == 0 and (not compact or (compact and m==0)):
                     info = prototypes[cpt][extreme][sample][1]
                     if info == "data":
                         plt.title("Prototype\nfrom data", fontsize=9)
                     else:
                         plt.title(f"Generated\n{info}", fontsize=9)
                 i += 1
-            i += 1 if m == 0 else 0
+            i += 1 if m == 0 and not compact else 0
     if show_activations:
         plt.subplots_adjust(hspace=.23, wspace=0.1)
     else:
@@ -465,25 +473,28 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
         return prototypes
     else:
         return
-
-    # concept_grid(model, fig)
-
-    plt.tight_layout()
-    plt.show()
-
     
-def evaluate(model, dataset, print_freq=1000):
-    #TO DO: use single batch
+def evaluate(model, dataset, print_freq=1000, return_acc=False):
     model.eval
     correct = 0.
-    with torch.no_grad():
-        for i in range(len(dataset)):
-            if print_freq != 0 and i % print_freq == 0:
-                print(f"{i}/{len(dataset)}")
-            x, t = get_digit(dataset, i)
-            y = model(x.view(1,1,28,28))
-            if torch.argmax(y) == t:
-                correct += 1
+    #dataloader could be faster/more practical
+    batch_x = torch.zeros(len(dataset),1,28,28)
+    batch_t = torch.zeros(len(dataset))
+    for i in range(len(dataset)):
+        if print_freq != 0 and i % print_freq == 0:
+            print(f"{i}/{len(dataset)}")
+        x, t = get_digit(dataset, i)
+        batch_x[i,0,:,:] = x
+        batch_t[i] = t
     if print_freq != 0:
         print(f"{len(dataset)}/{len(dataset)}")
-    return correct/len(dataset)
+        print("Evaluating...")
+    with torch.no_grad():
+        batch_y = model(batch_x)
+        correct = torch.sum(torch.argmax(batch_y, axis=1) == batch_t)
+    acc = correct.type(torch.FloatTensor)/len(dataset)
+    if print_freq != 0:
+        print("accuracy = {:.3}".format(acc))
+    if return_acc:
+        return acc
+    return
