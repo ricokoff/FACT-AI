@@ -134,16 +134,31 @@ def plot_lipschitz_feature(model, x):
 
 # plot_lipschitz_feature(model, x)
 
-def evaluate(model, dataset, print_freq=1000):
+def get_sample(dataset, indx):
+    x, t = dataset.__getitem__(indx)
+    return x, t 
+
+def evaluate(model, dataset, print_freq=1000, return_acc=False):
     model.eval
     correct = 0.
-    with torch.no_grad():
-        for i, (x, t) in enumerate(dataset):
-            if print_freq != 0 and i % print_freq == 0:
+    #dataloader could be faster/more practical
+    batch_x = torch.zeros(len(dataset),len(get_sample(dataset, 0)[0]))
+    batch_t = torch.zeros(len(dataset))
+    for i in range(len(dataset)):
+        if print_freq != 0 and i % print_freq == 0:
                 print(f"{i}/{len(dataset)}")
-            y = model(x.view(1,-1)).squeeze()
-            if torch.round(y) == t:
-                correct += 1
+        x, t = get_sample(dataset, i)
+        batch_x[i,:] = x
+        batch_t[i] = t
     if print_freq != 0:
         print(f"{len(dataset)}/{len(dataset)}")
-    return correct/len(dataset)
+        print("Evaluating...")
+    with torch.no_grad():
+        batch_y = model(batch_x).squeeze()
+        correct = torch.sum(torch.round(batch_y) == batch_t)
+    acc = correct.type(torch.FloatTensor) / len(dataset)
+    if print_freq != 0:
+        print("accuracy = {:.3}".format(acc))
+    if return_acc:
+        return acc
+    return
