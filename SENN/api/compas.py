@@ -136,7 +136,7 @@ def plot_lipschitz_feature(model, x):
 
 def get_sample(dataset, indx):
     x, t = dataset.__getitem__(indx)
-    return x, t 
+    return x, t
 
 def evaluate(model, dataset, print_freq=1000, return_acc=False):
     model.eval
