@@ -360,9 +360,9 @@ def generate_prototypes(model, prototypes, Nsteps=100, Nsamples=1, lr=0.1, p1=1,
                     sample_loss.append(loss)
                 generated = torch.tensor(generator.generated.detach())
                 if p1 != 0:
-                    info = 'M="{}"\n{}={}\n{}={}'.format(method,r"$\alpha$",p1,r"$\beta$",p2) 
+                    info = 'M="{}"\n{}={}\n{}={}'.format(method,r"$\alpha$",p1,r"$\beta$",p2)
                 else:
-                    info = '{}={}\n{}={}'.format(r"$\alpha$",p1,r"$\beta$",p2) 
+                    info = '{}={}\n{}={}'.format(r"$\alpha$",p1,r"$\beta$",p2)
                 if prev is None:
                     prev = torch.tensor(generated)
                     prototypes[cpt][extreme][prev] = [activations[cpt], info]
@@ -372,7 +372,7 @@ def generate_prototypes(model, prototypes, Nsteps=100, Nsamples=1, lr=0.1, p1=1,
                     prototypes[cpt][extreme].pop(prev)
                     prev = torch.tensor(generated)
                     prototypes[cpt][extreme][prev] = [activations[cpt], info]
-                    losses[cpt][extreme][sample] = [sample_loss, "loss"] 
+                    losses[cpt][extreme][sample] = [sample_loss, "loss"]
     print(f"{len(prototypes.keys())}/{len(prototypes.keys())}") if print_freq != 0 else ""
     if show_loss:
         show_losses(losses, p1, p2, method)
@@ -473,9 +473,9 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
         return prototypes
     else:
         return
-    
+
 def evaluate(model, dataset, print_freq=1000, return_acc=False):
-    model.eval
+    model.eval()
     correct = 0.
     #dataloader could be faster/more practical
     batch_x = torch.zeros(len(dataset),1,28,28)
@@ -498,6 +498,7 @@ def evaluate(model, dataset, print_freq=1000, return_acc=False):
     if return_acc:
         return acc
     return
+
 
 def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
     #sometimes the model is so certain of a given class that removing a theta_i has no effect
@@ -553,3 +554,4 @@ def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
         plt.xticks(range(nconcepts),[str(i) for i in range(1,nconcepts+1)])
         plt.show()
     return
+
