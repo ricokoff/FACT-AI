@@ -518,10 +518,16 @@ def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
     plt.xlabel("Concept Index")
     
     ax1 = plt.subplot()
-    ax1.bar(range(len(theta_x.squeeze()[:,t])), theta_x.squeeze()[:,t])
+    p1 = ax1.bar(range(len(theta_x.squeeze()[:,t])), theta_x.squeeze()[:,t])
+    
+    ax1.tick_params(axis='y', colors=p1[0]._facecolor)
+    ax1.yaxis.label.set_color(p1[0]._facecolor)
     plt.ylabel(r"Feature Relevance $\theta(x)_i$")
+    
     ax2 = ax1.twinx()
-    ax2.plot(range(nconcepts), prob_drop, "--", color="orange")
+    p2 = ax2.plot(range(nconcepts), prob_drop, "--", color="orange")
+    ax2.tick_params(axis='y', colors=p2[0].get_color())
+    ax2.yaxis.label.set_color(p2[0].get_color())
     ax2.scatter(range(nconcepts), [float(i) for i in prob_drop], color="orange")
     plt.ticklabel_format(style="scientific",axis="y",scilimits=(0,0))
     plt.ylabel(r"Probability Drop") 
