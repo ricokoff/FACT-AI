@@ -500,37 +500,58 @@ def evaluate(model, dataset, print_freq=1000, return_acc=False):
     return
 
 
-def faith_evaluate(model, nconcept, dataset, print_freq=1000, return_acc=False, cuda=False):
-    model.eval()
-    if cuda:
-        model.cuda()
-    accuracies = {}
-    for con in range(nconcept):
-        correct = 0.
-        #dataloader could be faster/more practical
-        batch_x = torch.zeros(len(dataset),1,28,28)
-        batch_t = torch.zeros(len(dataset))
-        for i in range(len(dataset)):
-            if print_freq != 0 and i % print_freq == 0:
-                print(f"{i}/{len(dataset)}")
-            x, t = get_digit(dataset, i)
-            batch_x[i,0,:,:] = x
-            batch_t[i] = t
-        if print_freq != 0:
-            print(f"{len(dataset)}/{len(dataset)}")
-            print("Evaluating...")
-        with torch.no_grad():
-            if cuda:
-                batch_x, batch_t = batch_x.cuda(), batch_t.cuda()
-            h_x, _ = model.conceptizer(batch_x)
-            h_x[:,con,:] = 0
-            thetas = model.parametrizer(batch_x)
-            batch_y = model.aggregator(h_x, thetas)
-            correct = torch.sum(torch.argmax(batch_y, axis=1) == batch_t)
-        acc = correct.type(torch.FloatTensor)/len(dataset)
-        if print_freq != 0:
-            print("accuracy = {:.3}".format(acc))
-        if return_acc:
-            accuracies[con] = acc
+def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
+    #sometimes the model is so certain of a given class that removing a theta_i has no effect
+    prob_drop = []
+    x, t = mnist.get_digit(dataset, indx)
+    nconcepts = model.parametrizer.nconcept
+    with torch.no_grad():
+        theta_x = model.parametrizer(x.view(1,1,28,28))
+        h_x = model.conceptizer.encode(x.view(1,1,28,28))
+        probs_0 = torch.softmax(model(x.view(1,1,28,28)).squeeze(),dim=0)
+        prob_t = probs_0[t]
+        for i in range(nconcepts):
+            theta_i = torch.tensor(theta_x)
+            theta_i[0,i,:]=0.
+            prob_i = torch.softmax(model.aggregator(h_x, theta_i).squeeze(),dim=0)[t]
+            prob_drop.append(prob_t - prob_i)
+    plt.title("Faithfulness plot for a single sample")
+    plt.xlabel("Concept Index")
+    
+    ax1 = plt.subplot()
+    p1 = ax1.bar(range(len(theta_x.squeeze()[:,t])), theta_x.squeeze()[:,t])
+    
+    ax1.tick_params(axis='y', colors=p1[0]._facecolor)
+    ax1.yaxis.label.set_color(p1[0]._facecolor)
+    plt.ylabel(r"Feature Relevance $\theta(x)_i$")
+    
+    ax2 = ax1.twinx()
+    p2 = ax2.plot(range(nconcepts), prob_drop, "--", color="orange")
+    ax2.tick_params(axis='y', colors=p2[0].get_color())
+    ax2.yaxis.label.set_color(p2[0].get_color())
+    ax2.scatter(range(nconcepts), [float(i) for i in prob_drop], color="orange")
+    plt.ticklabel_format(style="scientific",axis="y",scilimits=(0,0))
+    plt.ylabel(r"Probability Drop") 
+    plt.xticks(range(nconcepts),[str(i) for i in range(1,nconcepts+1)])   
+    plt.tight_layout()
+    plt.show()
+    
+    h_x = h_x.squeeze()
+    theta_x = theta_x.squeeze()
+    if show_h:
+        plt.title("Concept activation")
+        plt.xlabel("Concept Index")
+        plt.ylabel(r"$h(x)_i$")
+        plt.bar(range(nconcepts),h_x)
+        plt.xticks(range(nconcepts),[str(i) for i in range(1,nconcepts+1)])
+        plt.show()
+    
+    if show_htheta:
+        plt.title("Relevance multiplied by concept activation")
+        plt.xlabel("Concept Index")
+        plt.ylabel(r"$\theta(x)_i \cdot h(x)_i$")
+        plt.bar(range(nconcepts),np.array(h_x)*np.array(theta_x[:,t]))
+        plt.xticks(range(nconcepts),[str(i) for i in range(1,nconcepts+1)])
+        plt.show()
+    return
 
-    return accuracies
