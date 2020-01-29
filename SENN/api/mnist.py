@@ -12,7 +12,7 @@ from api.utils import MNIST_TEST_SET, MNIST_TRAIN_SET, IMAGES_FOLDER
 def get_digit_image(digit):
     indices = [(MNIST_TEST_SET.targets == i).nonzero().reshape(1, -1).view(-1) for i in range(10)]
     index = np.random.choice(indices[digit])
-    example = MNIST_TEST_SET[index][0].view(1, 1, 28, 28)
+    example = torch.flip(MNIST_TEST_SET[index][0], [0,1]).unsqueeze(0)
     return example
 
 
@@ -22,7 +22,7 @@ def gaussian_perturbation(x):
         return x + noise
 
 
-def plot_digit(x, label, title='Original', ax=None):
+def plot_digit(x, label, title='Original', ax=None, fs=10):
     show_and_save = False
     if ax is None:
         show_and_save = True
@@ -32,11 +32,11 @@ def plot_digit(x, label, title='Original', ax=None):
 
     ax.set(xlim=(0, x_size - 1), ylim=(0, y_size - 1))
     ax.set_xticks([0, x_size - 1])
-    ax.set_xticklabels([0, x_size])
+    ax.set_xticklabels([0, x_size], fontsize=fs)
     ax.set_yticks([y_size - 1, 0])
-    ax.set_yticklabels([0, y_size])
+    ax.set_yticklabels([0, y_size], fontsize=fs)
 
-    ax.set_title(title)
+    ax.set_title(title, fontsize=fs)
     ax.imshow(x)
 
     if show_and_save:
@@ -46,7 +46,7 @@ def plot_digit(x, label, title='Original', ax=None):
         plt.show()
 
 
-def plot_activation(model, x, label, title='SENN', ax=None):
+def plot_activation(model, x, label, title='SENN', ax=None, fs=10):
     show_and_save = False
     if ax is None:
         show_and_save = True
@@ -77,12 +77,12 @@ def plot_activation(model, x, label, title='SENN', ax=None):
 
     ax.set(xlim=(-100, 100))
     ax.set_xticks([-100, 0, 100])
-    ax.set_xticklabels([-100, 0, 100])
+    ax.set_xticklabels([-100, 0, 100], fontsize=fs)
     ax.set_yticks(yticks)
-    ax.set_yticklabels(yticklabels)
+    ax.set_yticklabels(yticklabels, fontsize=fs)
     ax.set_xlim(-105, 105)
 
-    ax.set_title(title)
+    ax.set_title(title, fontsize=fs)
     ax.barh(yticks, sorted_column_values, align='center', color=bar_colors)
 
     if show_and_save:
@@ -159,6 +159,100 @@ def plot_digit_noise_activation(model, digit, number_of_samples, ax=None):
         plt.show()
 
 
+def im_act_con_plot(model, digit, cuda=False, top_k = 6, layout = 'vertical', return_fig=False, save_path = None):
+    data_loader = dataloader.DataLoader(MNIST_TEST_SET, **{'batch_size': 64, 'num_workers': 9, 'shuffle': False})
+
+    all_norms = []
+    num_concepts = model.parametrizer.nconcept
+    concept_dim  = model.parametrizer.dout
+
+    top_activations = {k: np.array(top_k*[-1000.00]) for k in range(num_concepts)}
+    top_examples = {k: top_k*[None] for k in range(num_concepts)}
+    all_activs = []
+    for idx, (data, target) in enumerate(data_loader):
+        # get the inputs
+        if cuda:
+            data, target = data.cuda(), target.cuda()
+        data, target = Variable(data, volatile=True), Variable(target)
+        output = model(data)
+        concepts = model.concepts.data
+        #pdb.set_trace()
+        #concepts[concepts < 0] = 0.0 # This is unncessary if output of H is designed to be > 0.
+        if concepts.shape[-1] > 1:
+            print('ERROR')
+            print(asd.asd)
+            activations = np.linalg.norm(concepts, axis = 2)
+        else:
+            activations = concepts
+
+        all_activs.append(activations)
+        # if idx == 10:
+        #     break
+
+    all_activs = torch.cat(all_activs)
+    top_activations, top_idxs = torch.topk(all_activs, top_k, 0)
+    top_activations = top_activations.squeeze().t()
+    top_idxs = top_idxs.squeeze().t()
+    top_examples = {}
+    for i in range(num_concepts):
+        top_examples[i] = data_loader.dataset.test_data[top_idxs[i]]
+
+    if layout == 'horizontal':
+        fig = plt.figure(figsize=(20+top_k,num_concepts+1), constrained_layout=True)
+        grid = fig.add_gridspec(num_concepts, 10+top_k, wspace=0.4, hspace=0.3)
+        ax1 = fig.add_subplot(grid[:, 0:4])
+        ax2 = fig.add_subplot(grid[:, 5:9])
+        fontsize=18
+    else:
+        fig = plt.figure(figsize=(num_concepts+1,20+top_k), constrained_layout=True)
+        grid = fig.add_gridspec(10+top_k, num_concepts, wspace=0.4, hspace=0.3)
+        ax1 = fig.add_subplot(grid[0:4, :])
+        ax2 = fig.add_subplot(grid[5:9, :])
+        fontsize=14
+
+    digitim = get_digit_image(digit)
+    plot_digit(digitim.squeeze(), "test", title='Number '+str(digit), ax=ax1, fs=fontsize)
+    plot_activation(model, digitim, "test", title='SENN', ax=ax2, fs=fontsize)
+
+    for i in range(num_concepts):
+        for j in range(top_k):
+            if layout == 'horizontal':
+                ax = fig.add_subplot(grid[i ,j+10])
+            else:
+                ax = fig.add_subplot(grid[j+10 ,i])
+
+            l = i*top_k + j
+            #print(i,j)
+            #print(top_examples[i][j].shape)
+            ax.imshow(top_examples[i][j], cmap='Greys',  interpolation='nearest')
+            if layout == 'vertical':
+                ax.axis('off')
+                if j == 0:
+                    ax.set_title('Cpt {}'.format(i), fontsize = fontsize)
+            else:
+                ax.set_xticklabels([])
+                ax.set_yticklabels([])
+                ax.set_yticks([])
+                ax.set_xticks([])
+                for side in ['top', 'right', 'bottom', 'left']:
+                    ax.spines[side].set_visible(False)
+                if i == 0:
+                    ax.set_title('Pr{}'.format(j), fontsize = fontsize)
+                if j == 0:
+                    ax.set_ylabel('Ct{}'.format(i), fontsize = fontsize)
+
+    if layout == 'vertical':
+        fig.subplots_adjust(wspace=0.01, hspace=0.1)
+    else:
+        fig.subplots_adjust(wspace=0.1, hspace=0.01)
+
+    if save_path is not None:
+        plt.savefig(save_path, bbox_inches = 'tight', format='pdf', dpi=300)
+    plt.show()
+    if return_fig:
+        return fig, axes
+
+
 # TODO: REFACTOR
 def _concept_grid(model, data_loader, top_k=6, layout='vertical', fig=None):
     num_concepts = model.parametrizer.nconcept
@@ -188,8 +282,8 @@ def _concept_grid(model, data_loader, top_k=6, layout='vertical', fig=None):
         num_rows = top_k
         figsize = (1.4 * num_cols, num_rows)
 
-    axes = fig.add_subplot(2, 2, 3)
-    # fig, axes = ax.subplots(figsize=figsize, nrows=num_rows, ncols=num_cols)
+    # axes = fig.add_subplot(2, 2, 3)
+    fig, axes = plt.subplots(figsize=figsize, nrows=num_rows, ncols=num_cols)
 
     for i in range(num_concepts):
         for j in range(top_k):
@@ -213,7 +307,7 @@ def _concept_grid(model, data_loader, top_k=6, layout='vertical', fig=None):
                 if j == 0:
                     axes[pos].set_ylabel('Concept {}'.format(i + 1), rotation=90)
 
-    cols = ['Prot.{}'.format(col) for col in range(1, num_cols + 1)]
+    cols = ['ct.{}'.format(col) for col in range(1, num_cols + 1)]
     rows = ['Concept # {}'.format(row) for row in range(1, num_rows + 1)]
 
     for ax, col in zip(axes[0], cols):
@@ -517,25 +611,25 @@ def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
             prob_drop.append(prob_t - prob_i)
     plt.title("Faithfulness plot for a single sample")
     plt.xlabel("Concept Index")
-    
+
     ax1 = plt.subplot()
     p1 = ax1.bar(range(len(theta_x.squeeze()[:,t])), theta_x.squeeze()[:,t])
-    
+
     ax1.tick_params(axis='y', colors=p1[0]._facecolor)
     ax1.yaxis.label.set_color(p1[0]._facecolor)
     plt.ylabel(r"Feature Relevance $\theta(x)_i$")
-    
+
     ax2 = ax1.twinx()
     p2 = ax2.plot(range(nconcepts), prob_drop, "--", color="orange")
     ax2.tick_params(axis='y', colors=p2[0].get_color())
     ax2.yaxis.label.set_color(p2[0].get_color())
     ax2.scatter(range(nconcepts), [float(i) for i in prob_drop], color="orange")
     plt.ticklabel_format(style="scientific",axis="y",scilimits=(0,0))
-    plt.ylabel(r"Probability Drop") 
-    plt.xticks(range(nconcepts),[str(i) for i in range(1,nconcepts+1)])   
+    plt.ylabel(r"Probability Drop")
+    plt.xticks(range(nconcepts),[str(i) for i in range(1,nconcepts+1)])
     plt.tight_layout()
     plt.show()
-    
+
     h_x = h_x.squeeze()
     theta_x = theta_x.squeeze()
     if show_h:
@@ -545,7 +639,7 @@ def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
         plt.bar(range(nconcepts),h_x)
         plt.xticks(range(nconcepts),[str(i) for i in range(1,nconcepts+1)])
         plt.show()
-    
+
     if show_htheta:
         plt.title("Relevance multiplied by concept activation")
         plt.xlabel("Concept Index")
@@ -554,4 +648,3 @@ def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
         plt.xticks(range(nconcepts),[str(i) for i in range(1,nconcepts+1)])
         plt.show()
     return
-
