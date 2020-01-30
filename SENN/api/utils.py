@@ -1,7 +1,9 @@
 import os
 import sys
+from enum import auto, Enum
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
@@ -13,6 +15,26 @@ from torchvision import transforms
 from torchvision.datasets import MNIST
 from tqdm import tqdm
 
+
+class RegLambda(Enum):
+    ZERO = 0
+    E4 = 1e-4
+    E3 = 1e-3
+    E2 = 1e-2
+    E1 = 1e-1
+    ONE = 1
+
+
+class HType(Enum):
+    CNN = auto()
+    INPUT = auto()
+
+
+class NConcepts(Enum):
+    FIVE = 5
+    TWENTY = 20
+
+
 path = Path(__file__)
 
 PROJECT_NAME = 'SENN'
@@ -20,7 +42,7 @@ PROJECT_NAME = 'SENN'
 while path.name != PROJECT_NAME:
     path = path.parent
 
-MODELS_FOLDER = path.joinpath('models')
+MODELS_FOLDER = path.parent.joinpath('models')
 DATA_FOLDER = path.joinpath('data')
 IMAGES_FOLDER = path.joinpath('images')
 
@@ -103,3 +125,30 @@ _, _, _, COMPAS_TRAIN_SET, _, COMPAS_TEST_SET, _, COMPAS_FEAT_NAMES = load_compa
 
 MNIST_TRAIN_SET = MNIST(DATA_FOLDER.joinpath('MNIST'), train=True, download=False, transform=transform)
 MNIST_TEST_SET = MNIST(DATA_FOLDER.joinpath('MNIST'), train=False, download=False, transform=transform)
+
+
+def plot_accuracy_comparison(accuracies, titles):
+    x = [l.value for l in RegLambda]
+    xticks = np.linspace(0, 1, len(x))
+    colors = ['C{}'.format(i) for i in range(8)]
+    nrows = 2
+    ncols = 2
+
+    _, ax = plt.subplots(2, 2, figsize=(12, 6))
+
+    for i in range(nrows):
+        for j in range(ncols):
+            y = list(accuracies[i + j * 2].values())
+            ax[i, j].set(xlim=(0 - 0.1, 1 + 0.1), ylim=(0 - 0.1, 1 + 0.1))
+            ax[i, j].set_xticks(xticks)
+            ax[i, j].set_xticklabels([('{:0.0e}' if i != 0 and i != 1 else '{}').format(i) for i in x])
+            ax[i, j].plot(xticks, y, 'go', alpha=0.9, color=colors[i + j * 2])
+            ax[i, j].plot(xticks, y, '--', alpha=0.9, color=colors[i + j * 2 + 1])
+            ax[i, j].set_title(titles[i + j * 2])
+            ax[i, j].set_xlabel(r"$\lambda$")
+            ax[i, j].set_ylabel("Accuracy")
+            for n, m in zip(xticks, y):
+                ax[i, j].text(n, m, "%.2f" % round(float(m), 2), va="bottom")
+    plt.tight_layout()
+    plt.suptitle("Accuracy", fontsize=16, y=1.05)
+    plt.show()

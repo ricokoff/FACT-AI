@@ -1,27 +1,6 @@
 import torch
-from enum import Enum, auto
 
-from api.utils import MODELS_FOLDER
-
-
-class RegLambda(Enum):
-    ZERO = 0
-    E4 = 1e-4
-    E3 = 1e-3
-    E2 = 1e-2
-    E1 = 1e-1
-    ONE = 1
-
-
-class HType(Enum):
-    CNN = auto()
-    INPUT = auto()
-
-
-class NConcepts(Enum):
-    FIVE = 5
-    TWENTY = 20
-
+from api.utils import RegLambda, HType, NConcepts, MODELS_FOLDER
 
 def load_compas(reg_lambda=RegLambda.E4, show_specs=True):
     path = 'grad3_Hinput_Thsimple_Reg{:0.0e}_LR0.0002'.format(reg_lambda.value)
@@ -35,6 +14,7 @@ def load_compas(reg_lambda=RegLambda.E4, show_specs=True):
 
 
 def load_mnist(reg_lambda=RegLambda.E4, h_type=HType.CNN, n_concepts=NConcepts.FIVE, show_specs=True):
+    path = ''
     if h_type == HType.CNN:
         path = 'grad3_Hcnn_Thsimple_Cpts{}_Reg{:0.0e}_Sp2e-05_LR0.0002'.format(n_concepts.value, reg_lambda.value)
     elif h_type == HType.INPUT:

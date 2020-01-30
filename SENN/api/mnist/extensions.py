@@ -223,7 +223,7 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
         return
 
 
-def evaluate(model, dataset, print_freq=1000, return_acc=False):
+def evaluate(model, dataset, print_freq=1000):
     model.eval()
     correct = 0.
     # dataloader could be faster/more practical
@@ -244,9 +244,8 @@ def evaluate(model, dataset, print_freq=1000, return_acc=False):
     acc = correct.type(torch.FloatTensor) / len(dataset)
     if print_freq != 0:
         print("accuracy = {:.3}".format(acc))
-    if return_acc:
-        return acc
-    return
+
+    return acc
 
 
 def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
@@ -302,4 +301,3 @@ def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
         plt.bar(range(nconcepts), np.array(h_x) * np.array(theta_x[:, t]))
         plt.xticks(range(nconcepts), [str(i) for i in range(1, nconcepts + 1)])
         plt.show()
-    return

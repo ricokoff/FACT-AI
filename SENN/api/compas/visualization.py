@@ -54,21 +54,18 @@ def plot_explanation(model, x, title='Explanation', show_labels=True, ax=None):
         prediction = model(example.view(1, -1).clone().detach()).data
     thetas = model.thetas.data.numpy().squeeze()
     parameters = dict(zip(COMPAS_FEAT_NAMES, thetas))
-    features = list(parameters.keys())
-    values = list(parameters.values())
+    features = list(parameters.keys())[::-1]
+    values = list(parameters.values())[::-1]
     maximum_value = np.absolute(np.array(values)).max()
     values = ((np.array(values) / maximum_value) * 100)
-    index_sorted = range(len(values))[::-1]
-    sorted_column_values = list(np.array(values)[index_sorted])
 
-    yticks = np.arange(len(sorted_column_values)) + 0.5
-    yticklabels = list(np.array(features)[index_sorted])
+    yticks = np.arange(len(features)) + 0.5
+    yticklabels = list(np.array(features))
 
     red = '#FF4D4D'
     blue = '#3DE8F7'
 
     bar_colors = list(map(lambda value: blue if value > 0 else red, values))
-    bar_colors = list(np.array(bar_colors))
 
     ax.set(xlim=(-100, 100))
     ax.set_xticks([-100, 0, 100])
@@ -84,7 +81,7 @@ def plot_explanation(model, x, title='Explanation', show_labels=True, ax=None):
 
     ax.set_title(title, fontsize=16)
     ax.title.set_position([.5, 1.05])
-    ax.barh(yticks, sorted_column_values, align='center', color=bar_colors)
+    ax.barh(yticks, values, align='center', color=bar_colors)
 
     if show_and_save:
         plt.tight_layout()
@@ -101,11 +98,10 @@ def plot_input_values_regularized_unregularized_explanation(model, unregularized
         _, ax = plt.subplots(nrows, 3, figsize=(15, 5 * nrows))
 
     for i, x in enumerate(xs):
-        print(i)
         plot_input_values(model, x, ax=ax[i, 0] if nrows > 1 else ax[0])
-        plot_explanation(unregularized_model, x, title=r'Relevance Score $\theta$(x) (Scaled)',
+        plot_explanation(model, x, title=r'Relevance Score $\theta$(x) (Scaled)',
                          ax=ax[i, 1] if nrows > 1 else ax[1])
-        plot_explanation(model, x, title=r'Relevance Score $\theta$(x) (Scaled)', show_labels=False,
+        plot_explanation(unregularized_model, x, title=r'Relevance Score $\theta$(x) (Scaled)', show_labels=False,
                          ax=ax[i, 2] if nrows > 1 else ax[2])
 
     if show_and_save:
