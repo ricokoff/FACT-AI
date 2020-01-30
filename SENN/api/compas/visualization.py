@@ -114,36 +114,3 @@ def plot_input_values_regularized_unregularized_explanation(model, unregularized
         save_path = IMAGES_FOLDER.joinpath('compas', 'input_values_regularized_unregularized_explanation.pdf')
         plt.savefig(str(save_path), bbox_inches='tight', format='pdf', dpi=300)
         plt.show()
-
-
-x = [
-    0.,  # Two_yr_Recidivism
-    0.23,  # Number_of_Priors
-    0.,  # Age_Above_FourtyFive
-    1.,  # Age_Below_TwentyFive
-    1.,  # African_American
-    0.,  # Asian
-    0.,  # Hispanic
-    0.,  # Native_American
-    0.,  # Other
-    0.,  # Female
-    0.,  # Misdemeanor
-]
-
-y = [
-    0.,  # Two_yr_Recidivism
-    0.23,  # Number_of_Priors
-    0.,  # Age_Above_FourtyFive
-    1.,  # Age_Below_TwentyFive
-    0.,  # African_American
-    0.,  # Asian
-    0.,  # Hispanic
-    0.,  # Native_American
-    0.,  # Other
-    0.,  # Female
-    0.,  # Misdemeanor
-]
-
-model = load_compas(RegLambda.E2)
-unregularized_model = load_compas(RegLambda.ZERO)
-plot_input_values_regularized_unregularized_explanation(model, unregularized_model, [x, y])
