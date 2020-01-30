@@ -251,7 +251,7 @@ def evaluate(model, dataset, print_freq=1000):
 def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
     # sometimes the model is so certain of a given class that removing a theta_i has no effect
     prob_drop = []
-    x, t = mnist.get_digit(dataset, indx)
+    x, t = get_digit(dataset, indx)
     nconcepts = model.parametrizer.nconcept
     with torch.no_grad():
         theta_x = model.parametrizer(x.view(1, 1, 28, 28))
@@ -263,23 +263,23 @@ def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
             theta_i[0, i, :] = 0.
             prob_i = torch.softmax(model.aggregator(h_x, theta_i).squeeze(), dim=0)[t]
             prob_drop.append(prob_t - prob_i)
-    plt.title("Faithfulness plot for a single sample")
-    plt.xlabel("Concept Index")
+    plt.title("Faithfulness plot for a single sample",fontsize=12)
+    plt.xlabel("Concept Index",fontsize=12)
 
     ax1 = plt.subplot()
     p1 = ax1.bar(range(len(theta_x.squeeze()[:, t])), theta_x.squeeze()[:, t])
 
     ax1.tick_params(axis='y', colors=p1[0]._facecolor)
     ax1.yaxis.label.set_color(p1[0]._facecolor)
-    plt.ylabel(r"Feature Relevance $\theta(x)_i$")
+    plt.ylabel(r"Feature Relevance $\theta(x)_i$",fontsize=12)
 
     ax2 = ax1.twinx()
-    p2 = ax2.plot(range(nconcepts), prob_drop, "--", color="orange")
+    p2 = ax2.plot(range(nconcepts), prob_drop, "--", color="darkorange")
     ax2.tick_params(axis='y', colors=p2[0].get_color())
     ax2.yaxis.label.set_color(p2[0].get_color())
-    ax2.scatter(range(nconcepts), [float(i) for i in prob_drop], color="orange")
+    ax2.scatter(range(nconcepts), [float(i) for i in prob_drop], color="darkorange")
     plt.ticklabel_format(style="scientific", axis="y", scilimits=(0, 0))
-    plt.ylabel(r"Probability Drop")
+    plt.ylabel(r"Probability Drop",fontsize=12)
     plt.xticks(range(nconcepts), [str(i) for i in range(1, nconcepts + 1)])
     plt.tight_layout()
     plt.show()
@@ -287,17 +287,17 @@ def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
     h_x = h_x.squeeze()
     theta_x = theta_x.squeeze()
     if show_h:
-        plt.title("Concept activation")
-        plt.xlabel("Concept Index")
-        plt.ylabel(r"$h(x)_i$")
+        plt.title("Concept activation",fontsize=12)
+        plt.xlabel("Concept Index",fontsize=12)
+        plt.ylabel(r"$h(x)_i$",fontsize=12)
         plt.bar(range(nconcepts), h_x)
         plt.xticks(range(nconcepts), [str(i) for i in range(1, nconcepts + 1)])
         plt.show()
 
     if show_htheta:
-        plt.title("Relevance multiplied by concept activation")
-        plt.xlabel("Concept Index")
-        plt.ylabel(r"$\theta(x)_i \cdot h(x)_i$")
+        plt.title("Relevance multiplied by concept activation",fontsize=12)
+        plt.xlabel("Concept Index",fontsize=12)
+        plt.ylabel(r"$\theta(x)_i \cdot h(x)_i$",fontsize=12)
         plt.bar(range(nconcepts), np.array(h_x) * np.array(theta_x[:, t]))
         plt.xticks(range(nconcepts), [str(i) for i in range(1, nconcepts + 1)])
         plt.show()
