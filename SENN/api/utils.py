@@ -123,8 +123,8 @@ def load_compas_data(shuffle=False, batch_size=64):
 # COMPAS_DATA_SET, COMPAS_FEAT_NAMES = load_compas_data()
 _, _, _, COMPAS_TRAIN_SET, _, COMPAS_TEST_SET, _, COMPAS_FEAT_NAMES = load_compas_data()
 
-MNIST_TRAIN_SET = MNIST(DATA_FOLDER.joinpath('MNIST'), train=True, download=False, transform=transform)
-MNIST_TEST_SET = MNIST(DATA_FOLDER.joinpath('MNIST'), train=False, download=False, transform=transform)
+MNIST_TRAIN_SET = MNIST(DATA_FOLDER.joinpath('MNIST'), train=True, download=True, transform=transform)
+MNIST_TEST_SET = MNIST(DATA_FOLDER.joinpath('MNIST'), train=False, download=True, transform=transform)
 
 
 def plot_accuracy_comparison(accuracies, titles):
