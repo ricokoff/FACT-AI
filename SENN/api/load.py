@@ -29,12 +29,13 @@ def load_compas(reg_lambda=RegLambda.E4, show_specs=True):
         print('Loading MNIST model ' + path + ':')
         show_model_specs(reg_lambda)
     best = torch.load(MODELS_FOLDER.joinpath('compas', path, 'model_best.pth.tar'), map_location=torch.device('cpu'))
-    return best['model']
+    model = best['model']
+    model.eval()
+    return model
 
 
 def load_mnist(reg_lambda=RegLambda.E4, h_type=HType.CNN, n_concepts=NConcepts.FIVE, show_specs=True):
     if h_type == HType.CNN:
-        # learning rate, sparsity and grad penalty method fixed for each model
         path = 'grad3_Hcnn_Thsimple_Cpts{}_Reg{:0.0e}_Sp2e-05_LR0.0002'.format(n_concepts.value, reg_lambda.value)
     elif h_type == HType.INPUT:
         path = 'grad3_Hinput_Thsimple_Reg{:0.0e}_LR0.0002'.format(reg_lambda.value)
@@ -42,7 +43,9 @@ def load_mnist(reg_lambda=RegLambda.E4, h_type=HType.CNN, n_concepts=NConcepts.F
         print('Loading MNIST model ' + path + ':')
         show_model_specs(reg_lambda, h_type, n_concepts)
     best = torch.load(MODELS_FOLDER.joinpath('mnist', path, 'model_best.pth.tar'), map_location=torch.device('cpu'))
-    return best['model']
+    model = best['model']
+    model.eval()
+    return model
 
 
 def show_model_specs(reg_lambda, h_type=HType.INPUT, n_concepts=None):
