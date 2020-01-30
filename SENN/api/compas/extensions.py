@@ -10,7 +10,7 @@ def get_sample(dataset, indx):
     return x, t
 
 
-def evaluate(model, dataset, print_freq=1000, return_acc=False):
+def evaluate(model, dataset, print_freq=1000):
     correct = 0.
     # dataloader could be faster/more practical
 
@@ -32,9 +32,8 @@ def evaluate(model, dataset, print_freq=1000, return_acc=False):
     acc = correct.type(torch.FloatTensor) / len(dataset)
     if print_freq != 0:
         print("accuracy = {:.3}".format(acc))
-    if return_acc:
-        return acc
-    return
+
+    return acc
 
 
 def pairwise_distances(x, y=None):
