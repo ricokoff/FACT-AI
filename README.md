@@ -11,7 +11,7 @@ This repo contains models, their performance, visualizations and explainations. 
         note: many functionalities were taken from https://github.com/dmelis/SENN
 
 ## How to work with this repo
-1. Make sure you have python 3.6 installed (if not, we cannot guarantee if the code will work)
+1. Make sure you have python 3.6 installed (if not, we cannot guarantee that the code will work)
 
 2. We recommend setting up a virtual environment for python 3.6
 
