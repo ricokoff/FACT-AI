@@ -133,7 +133,7 @@ def main():
     args.epochs = 10
     train_loader, valid_loader, test_loader, train, valid, test, data, feat_names  = load_compas_data()
 
-    layer_sizes = (10,10,5)
+    layer_sizes = (10,5,5)
     input_dim = 11
 
     if args.h_type == 'input':
