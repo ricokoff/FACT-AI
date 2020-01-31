@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import torch
 from api.datasets import MNIST_TEST_SET
 from api.common.mnist import get_digit
+from api.folders import MNIST_IMAGES
 
 from .generator import Generator
 
@@ -138,7 +139,6 @@ def visualize_concepts(model, p1=[1], p2=[1],
                        show_loss=False,
                        print_freqs=[5000, 2],
                        show_activations=False,
-                       return_prototypes=False,
                        best_of=1,
                        compact=False):
     # visualize concepts with images that max- or minimize their activations
@@ -182,7 +182,6 @@ def visualize_concepts(model, p1=[1], p2=[1],
                                          print_freq=print_freqs[1],
                                          Nsamples=best_of)
 
-    print("Setting up visualizations...")
     i = 1
     if compact:
         plt.figure(figsize=(2 + len(p1), 1 + 2 * len(prototypes)))
@@ -213,8 +212,7 @@ def visualize_concepts(model, p1=[1], p2=[1],
         plt.subplots_adjust(hspace=.23, wspace=0.1)
     else:
         plt.subplots_adjust(hspace=.1, wspace=0.1)
+
+    save_path = MNIST_IMAGES.joinpath('synthetic_images.pdf')
+    plt.savefig(str(save_path), bbox_inches='tight', format='pdf', dpi=300)
     plt.show()
-    if return_prototypes:
-        return prototypes
-    else:
-        return

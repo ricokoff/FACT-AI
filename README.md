@@ -28,7 +28,7 @@ $ git clone git@github.com:ricokoff/FACT-AI.git
 $ cd FACT-AI
 ```
 
-4. We recommend setting up a virtual environment for python 3.6
+4. We assume a virtual environment for Python 3.6 is set up in the repo root folder
 ```
 $ python -m venv .venv
 $ source .venv/bin/activate

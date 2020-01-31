@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn
 import torch
+from api.folders import COMPAS_IMAGES
 from torch.utils.data import DataLoader
 
 from api.datasets import COMPAS_TEST_SET
@@ -111,5 +112,7 @@ def plot_lipschitz_accuracy(models, reg_lambdas, accuracies, logscale=True):
     plt.scatter(range(len(accuracies)), [float(acc) for acc in accuracies], color="red")
     plt.ylabel("Prediction Accuracy", fontsize=12)
     ax2.yaxis.label.set_color('red')
-    # plt.tight_layout()
+    plt.tight_layout()
+    save_path = COMPAS_IMAGES.joinpath('lipschitz_stability.pdf')
+    plt.savefig(str(save_path), bbox_inches='tight', format='pdf', dpi=300)
     plt.show()
