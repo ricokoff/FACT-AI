@@ -9,35 +9,19 @@ from api.datasets import MNIST_TEST_SET
 from api.folders import MNIST_IMAGES
 
 
-def plot_digit_activation_concept_grid(model, index, cuda=False, top_k=6, layout='vertical'):
+def plot_digit_activation_concept_grid(model, index, top_k=6, layout='vertical'):
     data_loader = DataLoader(MNIST_TEST_SET, **{'batch_size': 64, 'num_workers': 9, 'shuffle': False})
 
-    all_norms = []
     num_concepts = model.parametrizer.nconcept
-    concept_dim = model.parametrizer.dout
 
-    top_activations = {k: np.array(top_k * [-1000.00]) for k in range(num_concepts)}
-    top_examples = {k: top_k * [None] for k in range(num_concepts)}
     all_activs = []
     for idx, (data, target) in enumerate(data_loader):
         # get the inputs
-        if cuda:
-            data, target = data.cuda(), target.cuda()
         data, target = torch.tensor(data), torch.tensor(target)
         output = model(data)
         concepts = model.concepts.data
-        # pdb.set_trace()
-        # concepts[concepts < 0] = 0.0 # This is unncessary if output of H is designed to be > 0.
-        if concepts.shape[-1] > 1:
-            print('ERROR')
-            print(asd.asd)
-            activations = np.linalg.norm(concepts, axis=2)
-        else:
-            activations = concepts
-
+        activations = concepts
         all_activs.append(activations)
-        # if idx == 10:
-        #     break
 
     all_activs = torch.cat(all_activs)
     top_activations, top_idxs = torch.topk(all_activs, top_k, 0)
@@ -71,9 +55,6 @@ def plot_digit_activation_concept_grid(model, index, cuda=False, top_k=6, layout
             else:
                 ax = fig.add_subplot(grid[j + 10, i])
 
-            l = i * top_k + j
-            # print(i,j)
-            # print(top_examples[i][j].shape)
             ax.imshow(top_examples[i][j], cmap='Greys', interpolation='nearest')
             if layout == 'vertical':
                 ax.axis('off')

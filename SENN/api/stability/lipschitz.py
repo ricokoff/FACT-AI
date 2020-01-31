@@ -39,11 +39,9 @@ def sample_local_lipschitz(model, mode=2, max_distance=None, top_k=1, cuda=False
             - top_k : how many to return
             - max_distance: maximum distance between points to consider (radius)
     """
-    tol = 1e-10  # To avoid numerical problems
-
     # Create dataloader from tds without shuffle
     dataloader = DataLoader(COMPAS_TEST_SET, batch_size=128, shuffle=False)
-    n = len(COMPAS_TEST_SET)  # len(COMPAS_TEST_SET)
+    n = len(COMPAS_TEST_SET)
     Hs = []
     Ts = []
 
@@ -53,7 +51,6 @@ def sample_local_lipschitz(model, mode=2, max_distance=None, top_k=1, cuda=False
             inputs, targets = inputs.cuda(), targets.cuda()
         with torch.no_grad():
             input_var = torch.tensor(inputs)
-            target_var = torch.tensor(targets)
 
         _ = model(input_var)
         Ts.append(model.thetas.squeeze())
@@ -71,27 +68,22 @@ def sample_local_lipschitz(model, mode=2, max_distance=None, top_k=1, cuda=False
     ratios = torch.Tensor(n, n)
 
     if max_distance is not None:
-        # Distances above threshold: make them inf
-        # print((denom_dists > max_distance).size())
-        nonzero = torch.nonzero((denom_dists > max_distance).data).size(0)
-        total = denom_dists.size(0) ** 2
-        #         print('Number of zero denom distances: {} ({:4.2f}%)'.format(
-        #                 total - nonzero, 100*(total-nonzero)/total))
-        denom_dists[denom_dists > max_distance] = -1.0  # float('inf')
+        denom_dists[denom_dists > max_distance] = -1.0
     # Same with self dists
-    denom_dists[denom_dists == 0] = -1.0  # float('inf')
+    denom_dists[denom_dists == 0] = -1.0
     ratios = (num_dists / denom_dists).data
-    argmaxes = {k: [] for k in range(n)}
     vals, inds = ratios.topk(top_k, 1, True, True)
     argmaxes = {i: [(j, v) for (j, v) in zip(inds[i, :], vals[i, :])] for i in range(n)}
     return vals[:, 0].numpy(), argmaxes
 
 
 def plot_lipschitz_accuracy(models, reg_lambdas, accuracies, logscale=True):
-    # models: list of models with different reg_lambda
-    # reg_lambda: use RegLambda
-    # accuracies: list of accs for each model
-    # TO DO (not necessary): if accs not given, calculate them
+    """
+    :param models: list of models with different reg_lambda
+    :param reg_lambdas: use RegLambda
+    :param accuracies: list of accs for each model
+    :param logscale
+    """
     lips_list = []
     for i in range(len(reg_lambdas)):
         lips, argmaxes = sample_local_lipschitz(models[i], mode=2, top_k=1, max_distance=3)
@@ -103,7 +95,6 @@ def plot_lipschitz_accuracy(models, reg_lambdas, accuracies, logscale=True):
     seaborn.boxplot(list(range(len(lips_list))), lips_list, palette="Set2", orient="v")
     plt.xticks(rotation=45)
     plt.xticks(range(len(accuracies)), ["{:0.0e}".format(x.value) for x in reg_lambdas])
-    # plt.ylim(0,1)
     if logscale:
         plt.yscale("log")
     ax2 = plt.twinx()

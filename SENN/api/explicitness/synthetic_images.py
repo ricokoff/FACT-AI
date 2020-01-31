@@ -7,8 +7,8 @@ from api.folders import MNIST_IMAGES
 from .generator import Generator
 
 
-# find lowest (find="low") or highest (find="high") value in dict
 def dic_find(dic, find):
+    bestkey = None
     best = 1e9 if find == "low" else -1e9
     for key in dic:
         temp = dic[key][0]
@@ -149,7 +149,6 @@ def visualize_concepts(model, p1=[1], p2=[1],
     # x0 is the initial guess for the generator: random if not given
     # print_freqs specifies print frequencies for (i) and (ii) respectively
     # best_of specifies how many times the generator will try to get a good activation
-    # TO DO: input checks
 
     # example of use:
     # prototypes = utils.visualize_cpts(model, test,
@@ -160,7 +159,6 @@ def visualize_concepts(model, p1=[1], p2=[1],
     #                              print_freqs=[1000,2],
     #                              show_loss=False,
     #                              show_activations=True,
-    #                              return_prototypes=True,
     #                              best_of=2,
     #                              conpact=True)
 
