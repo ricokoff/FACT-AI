@@ -27,8 +27,7 @@ pip install -r requirements.txt
 ```
 5. Make sure you have Jupyter installed and take a look at our notebook
 
-Note: this work has been tested only with the use of a python 3.6 environment with Jupyter
-
+Note: this work has been tested only with the use of a python 3.6 environment with Jupyter  
       and NOT with the use of Anaconda/Miniconda/etc., so using this might not work
       
 
