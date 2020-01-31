@@ -5,7 +5,8 @@ This repo contains models, their performance, visualizations and explainations. 
 
 ## Repo structure
 - Root: presentation, notebook, report, and images generated from code
-- SENN: code, which includes all utils used in the notebook  
+- SENN: code, which includes all utils used in the notebook 
+        note: many functionalities were taken from https://github.com/dmelis/SENN
 
 ## How to work with this repo
 1. Make sure you have python 3.6 installed (if not, we cannot guarantee if the code will work)
