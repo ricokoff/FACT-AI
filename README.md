@@ -16,23 +16,29 @@ $ python --version
 Python 3.6.10
 ```
 
-2. We recommend setting up a virtual environment for python 3.6
-```
-$ python -m venv .venv
-$ source .venv/bin/activate
-```
-3. Clone the repo:
+2. Clone the repo:
 ```
 $ git clone git@github.com:ricokoff/FACT-AI.git
 ```
 
-4. Enter the SENN folder and use:
+3. Enter the FACT-AI folder
+```
+$ cd FACT-AI
+```
+
+4. We recommend setting up a virtual environment for python 3.6
+```
+$ python -m venv .venv
+$ source .venv/bin/activate
+```
+
+5. Enter the SENN folder and use:
 ```
 $ pip install -r requirements.txt
 $ python setup.py install
 ```
 
-5. Make sure you have Jupyter installed and take a look at our notebook.
+6. Make sure you have Jupyter installed and take a look at our notebook.
 If you don't we highly recommend to install Jupyter while inside your environment.
 ```
 $ pip install ipython jupyter ipykernel
