@@ -41,5 +41,5 @@ Note: this work has been tested only with the use of a python 3.6 environment wi
 - Roberto Schiavone - 12883980 - r.schiavone@student.vu.nl
 
 ## TA:
-- Simon Pappenheim
+- Simon Passenheim
 
