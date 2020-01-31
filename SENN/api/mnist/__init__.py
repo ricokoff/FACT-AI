@@ -1,2 +1,2 @@
-from api.mnist.extensions import *
-from api.mnist.visualization import *
+from .extensions import *
+from .visualization import *

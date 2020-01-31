@@ -1,2 +1,2 @@
-from api.compas.extensions import *
-from api.compas.visualization import *
+from .extensions import *
+from .visualization import *

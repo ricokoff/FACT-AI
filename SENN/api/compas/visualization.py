@@ -4,7 +4,6 @@ import torch
 import matplotlib.pyplot as plt
 import numpy as np
 
-from api.load import load_compas, RegLambda
 from api.utils import IMAGES_FOLDER, COMPAS_FEAT_NAMES
 
 

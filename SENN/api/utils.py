@@ -37,12 +37,12 @@ class NConcepts(Enum):
 
 path = Path(__file__)
 
-PROJECT_NAME = 'SENN'
+PROJECT_NAME = 'FACT-AI'
 
 while path.name != PROJECT_NAME:
     path = path.parent
 
-MODELS_FOLDER = path.parent.joinpath('models')
+MODELS_FOLDER = path.joinpath('models')
 DATA_FOLDER = path.joinpath('data')
 IMAGES_FOLDER = path.joinpath('images')
 
@@ -84,13 +84,7 @@ def find_conflicting(df, labels, consensus_delta=0.2):
 
 
 def load_compas_data(shuffle=False, batch_size=64):
-    filename = DATA_FOLDER.joinpath('fairml', 'doc', 'example_notebooks', 'propublica_data_for_fairml.csv')
-    if not os.path.isfile(str(filename)):
-        print("ITS NOT", file=sys.stderr)
-        git_url = "https://github.com/adebayoj/fairml.git"
-        repo_dir = "data/fairml"
-        Repo.clone_from(git_url, repo_dir)
-
+    filename = DATA_FOLDER.joinpath('fairml', 'propublica_data_for_fairml.csv')
     df = pd.read_csv(filename)
 
     df['Number_of_Priors'] = np.sqrt(df['Number_of_Priors']) / (np.sqrt(38))

@@ -12,7 +12,10 @@ from api.utils import MNIST_TEST_SET, IMAGES_FOLDER
 #     example = MNIST_TEST_SET[index][0].view(1, 1, 28, 28)
 #     return example
 #
-from test_utils import get_digit
+def get_digit(dataset, indx):
+    d, t = dataset.__getitem__(indx)
+    return d.view(28, 28), t
+
 
 def gaussian_perturbation(x):
     with torch.no_grad():
@@ -192,6 +195,7 @@ def plot_digit_noise_activation_regularized_unregularized(model, unregularized_m
         plt.savefig(str(save_path), bbox_inches='tight', format='pdf', dpi=300)
         plt.show()
 
+
 def im_act_con_plot(model, index, cuda=False, top_k=6, layout='vertical', return_fig=False, save_path=None):
     data_loader = DataLoader(MNIST_TEST_SET, **{'batch_size': 64, 'num_workers': 9, 'shuffle': False})
 
@@ -283,7 +287,7 @@ def im_act_con_plot(model, index, cuda=False, top_k=6, layout='vertical', return
         plt.savefig(save_path, bbox_inches='tight', format='pdf', dpi=300)
     plt.show()
 
+
 def plot_accuracy(accuracy):
     lambdas = accuracy.keys()
     values = accuracy.values()
-
