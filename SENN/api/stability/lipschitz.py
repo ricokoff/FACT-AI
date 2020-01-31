@@ -4,36 +4,7 @@ import seaborn
 import torch
 from torch.utils.data import DataLoader
 
-
-def get_sample(dataset, indx):
-    x, t = dataset.__getitem__(indx)
-    return x, t
-
-
-def evaluate(model, dataset, print_freq=1000):
-    correct = 0.
-    # dataloader could be faster/more practical
-
-    # faster: x_batch = Ctest.tensors[0] , t_batch = Ctest.tensors[1]
-    batch_x = torch.zeros(len(dataset), len(get_sample(dataset, 0)[0]))
-    batch_t = torch.zeros(len(dataset))
-    for i in range(len(dataset)):
-        if print_freq != 0 and i % print_freq == 0:
-            print(f"{i}/{len(dataset)}")
-        x, t = get_sample(dataset, i)
-        batch_x[i, :] = x
-        batch_t[i] = t
-    if print_freq != 0:
-        print(f"{len(dataset)}/{len(dataset)}")
-        print("Evaluating...")
-    with torch.no_grad():
-        batch_y = model(batch_x).squeeze()
-        correct = torch.sum(torch.round(batch_y) == batch_t)
-    acc = correct.type(torch.FloatTensor) / len(dataset)
-    if print_freq != 0:
-        print("accuracy = {:.3}".format(acc))
-
-    return acc
+from api.datasets import COMPAS_TEST_SET
 
 
 def pairwise_distances(x, y=None):
@@ -59,21 +30,19 @@ def pairwise_distances(x, y=None):
     return torch.clamp(dist, 0.0, np.inf)
 
 
-def sample_local_lipschitz(model, dataset, mode=2, max_distance=None, top_k=1, cuda=False):
+def sample_local_lipschitz(model, mode=2, max_distance=None, top_k=1, cuda=False):
     """
         For every point in dataset, find pair point y in dataset that maximizes relative variation of model
             MODE 1:     || th(x) - th(y) ||/||x - y||
             MODE 2:     || th(x) - th(y) ||/||h(x) - h(y)||
-            - dataset: a tds obkect
             - top_k : how many to return
             - max_distance: maximum distance between points to consider (radius)
     """
-    model.eval()
     tol = 1e-10  # To avoid numerical problems
 
     # Create dataloader from tds without shuffle
-    dataloader = DataLoader(dataset, batch_size=128, shuffle=False)
-    n = len(dataset)  # len(dataset)
+    dataloader = DataLoader(COMPAS_TEST_SET, batch_size=128, shuffle=False)
+    n = len(COMPAS_TEST_SET)  # len(COMPAS_TEST_SET)
     Hs = []
     Ts = []
 
@@ -93,7 +62,7 @@ def sample_local_lipschitz(model, dataset, mode=2, max_distance=None, top_k=1, c
     num_dists = pairwise_distances(Ts)  # Numerator
 
     if mode == 1:
-        denom_dists = pairwise_distances(dataset)
+        denom_dists = pairwise_distances(COMPAS_TEST_SET)
     if mode == 2:
         Hs = torch.cat(Hs)
         denom_dists = pairwise_distances(Hs)
@@ -117,15 +86,14 @@ def sample_local_lipschitz(model, dataset, mode=2, max_distance=None, top_k=1, c
     return vals[:, 0].numpy(), argmaxes
 
 
-def lipschitz_accuracy_plot(models, reg_lambdas, dataset, accuracies, logscale=True):
+def plot_lipschitz_accuracy(models, reg_lambdas, accuracies, logscale=True):
     # models: list of models with different reg_lambda
     # reg_lambda: use RegLambda
-    # dataset: use COMPAS testset
     # accuracies: list of accs for each model
     # TO DO (not necessary): if accs not given, calculate them
     lips_list = []
     for i in range(len(reg_lambdas)):
-        lips, argmaxes = sample_local_lipschitz(models[i], dataset, mode=2, top_k=1, max_distance=3)
+        lips, argmaxes = sample_local_lipschitz(models[i], mode=2, top_k=1, max_distance=3)
         lips_list.append(lips)
     plt.title(r"Lipschitz estimate and accuracy versus $\lambda$", fontsize=12)
     plt.xlabel(r"Regularization Strength $\lambda$", fontsize=12)

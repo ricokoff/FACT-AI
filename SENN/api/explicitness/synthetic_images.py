@@ -1,12 +1,9 @@
 import matplotlib.pyplot as plt
-import numpy as np
 import torch
-from api.generator import Generator
+from api.datasets import MNIST_TEST_SET
+from api.common.mnist import get_digit
 
-
-def get_digit(dataset, indx):
-    d, t = dataset.__getitem__(indx)
-    return d.view(28, 28), t
+from .generator import Generator
 
 
 # find lowest (find="low") or highest (find="high") value in dict
@@ -20,12 +17,12 @@ def dic_find(dic, find):
     return bestkey
 
 
-def find_prototypes(model, dataset, prototypes, Nsamples=1, print_freq=5000):
+def find_prototypes(model, prototypes, Nsamples=1, print_freq=5000):
     print("Checking dataset for best prototypes...") if print_freq != 0 else ""
-    for i in range(len(dataset)):
+    for i in range(len(MNIST_TEST_SET)):
         if print_freq != 0 and i % print_freq == 0:
-            print(f"{i}/{len(dataset)}")
-        digit, _ = get_digit(dataset, i)
+            print(f"{i}/{len(MNIST_TEST_SET)}")
+        digit, _ = get_digit(i)
         encoded = model.conceptizer.encode(digit.view(1, 1, 28, 28)).squeeze()
         # check for every concept if this sample is better than prev ones
         for cpt in prototypes.keys():
@@ -40,12 +37,12 @@ def find_prototypes(model, dataset, prototypes, Nsamples=1, print_freq=5000):
                 if len(prototypes[cpt]["low"]) == Nsamples:
                     prototypes[cpt]["low"].pop(highkey_of_low)
                 prototypes[cpt]["low"][i] = [encoded[cpt], "data"]
-    print(f"{len(dataset)}/{len(dataset)}") if print_freq != 0 else ""
+    print(f"{len(MNIST_TEST_SET)}/{len(MNIST_TEST_SET)}") if print_freq != 0 else ""
     # convert the indices of the images to the images themselves
     for cpt in prototypes.keys():
         for extreme in prototypes[cpt].keys():
             for indx in dict(prototypes[cpt][extreme]).keys():
-                prototypes[cpt][extreme][get_digit(dataset, indx)[0]] = prototypes[cpt][extreme][indx]
+                prototypes[cpt][extreme][get_digit(indx)[0]] = prototypes[cpt][extreme][indx]
                 prototypes[cpt][extreme].pop(indx)
     return prototypes
 
@@ -97,7 +94,7 @@ def generate_prototypes(model, prototypes, Nsteps=100, Nsamples=1, lr=0.1, p1=1,
             prev = None
             for sample in range(Nsamples):
                 sample_loss = []
-                generator.initialize(x0=x0)  # reset generator
+                generator.initialize(x=x0)  # reset generator
                 optimizer = torch.optim.Adam(generator.parameters(), lr=lr)
                 for step in range(Nsteps):
                     optimizer.zero_grad()
@@ -135,15 +132,15 @@ def empty_prototypes(model, dummies=False):
         return {i: {"high": {}, "low": {}} for i in range(nconcepts)}
 
 
-def visualize_cpts(model, dataset, p1=[1], p2=[1],
-                   method=["zero"],
-                   x0=None,
-                   show_loss=False,
-                   print_freqs=[5000, 2],
-                   show_activations=False,
-                   return_prototypes=False,
-                   best_of=1,
-                   compact=False):
+def visualize_concepts(model, p1=[1], p2=[1],
+                       method=["zero"],
+                       x0=None,
+                       show_loss=False,
+                       print_freqs=[5000, 2],
+                       show_activations=False,
+                       return_prototypes=False,
+                       best_of=1,
+                       compact=False):
     # visualize concepts with images that max- or minimize their activations
     # (i): find the best samples from dataset, i.e. the prototypes
     # (ii): generate samples using gradient descent
@@ -168,7 +165,7 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
     #                              conpact=True)
 
     prototypes = empty_prototypes(model, dummies=True)
-    prototypes = find_prototypes(model, dataset, prototypes,
+    prototypes = find_prototypes(model, prototypes,
                                  print_freq=print_freqs[0])
 
     p1 = [p1] if not isinstance(p1, list) else p1
@@ -221,83 +218,3 @@ def visualize_cpts(model, dataset, p1=[1], p2=[1],
         return prototypes
     else:
         return
-
-
-def evaluate(model, dataset, print_freq=1000):
-    model.eval()
-    correct = 0.
-    # dataloader could be faster/more practical
-    batch_x = torch.zeros(len(dataset), 1, 28, 28)
-    batch_t = torch.zeros(len(dataset))
-    for i in range(len(dataset)):
-        if print_freq != 0 and i % print_freq == 0:
-            print(f"{i}/{len(dataset)}")
-        x, t = get_digit(dataset, i)
-        batch_x[i, 0, :, :] = x
-        batch_t[i] = t
-    if print_freq != 0:
-        print(f"{len(dataset)}/{len(dataset)}")
-        print("Evaluating...")
-    with torch.no_grad():
-        batch_y = model(batch_x)
-        correct = torch.sum(torch.argmax(batch_y, axis=1) == batch_t)
-    acc = correct.type(torch.FloatTensor) / len(dataset)
-    if print_freq != 0:
-        print("accuracy = {:.3}".format(acc))
-
-    return acc
-
-
-def faithfullness_plot(model, dataset, indx, show_h=False, show_htheta=True):
-    # sometimes the model is so certain of a given class that removing a theta_i has no effect
-    prob_drop = []
-    x, t = get_digit(dataset, indx)
-    nconcepts = model.parametrizer.nconcept
-    with torch.no_grad():
-        theta_x = model.parametrizer(x.view(1, 1, 28, 28))
-        h_x = model.conceptizer.encode(x.view(1, 1, 28, 28))
-        probs_0 = torch.softmax(model(x.view(1, 1, 28, 28)).squeeze(), dim=0)
-        prob_t = probs_0[t]
-        for i in range(nconcepts):
-            theta_i = torch.tensor(theta_x)
-            theta_i[0, i, :] = 0.
-            prob_i = torch.softmax(model.aggregator(h_x, theta_i).squeeze(), dim=0)[t]
-            prob_drop.append(prob_t - prob_i)
-    plt.title("Faithfulness plot for a single sample",fontsize=12)
-    plt.xlabel("Concept Index",fontsize=12)
-
-    ax1 = plt.subplot()
-    p1 = ax1.bar(range(len(theta_x.squeeze()[:, t])), theta_x.squeeze()[:, t])
-
-    ax1.tick_params(axis='y', colors=p1[0]._facecolor)
-    ax1.yaxis.label.set_color(p1[0]._facecolor)
-    plt.ylabel(r"Feature Relevance $\theta(x)_i$",fontsize=12)
-
-    ax2 = ax1.twinx()
-    p2 = ax2.plot(range(nconcepts), prob_drop, "--", color="darkorange")
-    ax2.tick_params(axis='y', colors=p2[0].get_color())
-    ax2.yaxis.label.set_color(p2[0].get_color())
-    ax2.scatter(range(nconcepts), [float(i) for i in prob_drop], color="darkorange")
-    plt.ticklabel_format(style="scientific", axis="y", scilimits=(0, 0))
-    plt.ylabel(r"Probability Drop",fontsize=12)
-    plt.xticks(range(nconcepts), [str(i) for i in range(1, nconcepts + 1)])
-    plt.tight_layout()
-    plt.show()
-
-    h_x = h_x.squeeze()
-    theta_x = theta_x.squeeze()
-    if show_h:
-        plt.title("Concept activation",fontsize=12)
-        plt.xlabel("Concept Index",fontsize=12)
-        plt.ylabel(r"$h(x)_i$",fontsize=12)
-        plt.bar(range(nconcepts), h_x)
-        plt.xticks(range(nconcepts), [str(i) for i in range(1, nconcepts + 1)])
-        plt.show()
-
-    if show_htheta:
-        plt.title("Relevance multiplied by concept activation",fontsize=12)
-        plt.xlabel("Concept Index",fontsize=12)
-        plt.ylabel(r"$\theta(x)_i \cdot h(x)_i$",fontsize=12)
-        plt.bar(range(nconcepts), np.array(h_x) * np.array(theta_x[:, t]))
-        plt.xticks(range(nconcepts), [str(i) for i in range(1, nconcepts + 1)])
-        plt.show()
