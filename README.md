@@ -31,5 +31,15 @@ Note: this work has been tested only with the use of a python 3.6 environment wi
       and NOT with the use of Anaconda/Miniconda/etc., so using this might not work
       
 
+## Contributors:
+- Ewoud Vermeij - 11348860 - ewoudvermeij@gmail.com
 
+- Yke Rusticus - 11306386 - yke.rusticus@student.uva.nl
+
+- Rico Mossinkoff - 12805157 - ricokoff@hotmail.com
+
+- Roberto Schiavone - 12883980 - r.schiavone@student.vu.nl
+
+## TA:
+- Simon Pappenheim
 
