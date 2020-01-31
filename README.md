@@ -3,6 +3,8 @@
 ## Reproduction of Paper: Towards Robust Interpretability with Self-Explaining Neural Networks
 This repo contains models, their performance, visualizations and explainations. New models can not be trained with this repository. An extension of the visualization of basic concepts is added.
 
+> Our code is under `SENN/api`.
+
 ## Repo structure
 - Root: presentation, notebook, report, and images generated from code
 
@@ -47,7 +49,6 @@ $ python -m ipykernel install --user --name SENN
 
 Once you run Jupyter Notebooks, you can now see your virtual environment available as a kernel:
 ![SENN Kernel](https://i.imgur.com/4m9Atnp.png)
-
 
 > Note: this work has been tested only with the use of a python 3.6 environment with Jupyter and NOT with the use of Anaconda/Miniconda/etc., so using this might not work
       

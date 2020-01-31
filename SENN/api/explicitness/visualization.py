@@ -61,7 +61,7 @@ def plot_digit_activation_concept_grid(model, index, cuda=False, top_k=6, layout
         fontsize = 14
 
     digitim, _ = get_digit(index)
-    plot_digit(digitim.squeeze(), "test", title='Number ' + str(index), ax=ax1, fs=fontsize)
+    plot_digit(digitim.squeeze(), "test", title='Index ' + str(index), ax=ax1, fs=fontsize)
     plot_activation(model, digitim, "test", title='SENN', ax=ax2, fs=fontsize)
 
     for i in range(num_concepts):

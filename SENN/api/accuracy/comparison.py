@@ -25,6 +25,6 @@ def plot_accuracy_comparison(accuracies, titles):
             ax[i, j].set_xlabel(r"$\lambda$")
             ax[i, j].set_ylabel("Accuracy")
             for n, m in zip(xticks, y):
-                ax[i, j].text(n, m, "%.2f" % round(float(m), 2), va="bottom")
+                ax[i, j].text(n, m, "{0:.1f}%".format(round(float(m) * 100, 1)), va="bottom")
     plt.tight_layout()
     plt.show()

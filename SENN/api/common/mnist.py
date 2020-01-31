@@ -25,6 +25,7 @@ def plot_digit(x, label, title='Original', ax=None, fs=10):
     ax.set_xticklabels([0, x_size], fontsize=fs)
     ax.xaxis.tick_top()
     ax.xaxis.set_tick_params(labeltop='on', labelbottom='off')
+    ax.xaxis.set_ticks_position('top')
     ax.set_yticks([y_size - 1, 0])
     ax.set_yticklabels([0, y_size], fontsize=fs)
 
@@ -75,6 +76,7 @@ def plot_activation(model, x, label, title='SENN', ax=None, fs=10):
     ax.set_yticklabels(yticklabels, fontsize=fs)
     ax.yaxis.tick_right()
     ax.yaxis.set_tick_params(labelleft='off', labelright='on')
+    ax.yaxis.set_ticks_position('right')
     ax.set_xlim(-105, 105)
 
     ax.set_title(title, fontsize=fs)
